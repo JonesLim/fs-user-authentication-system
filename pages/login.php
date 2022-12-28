@@ -2,19 +2,14 @@
 
     session_start();
 
-    //connect to db
-    $database = new PDO('mysql:host=devkinsta_db;dbname=User_Authentication_System','root','RgLE85FK77jXssOn');
+    $database = new PDO('mysql:host=devkinsta_db;dbname=Simple_Auth','root','RgLE85FK77jXssOn');
 
-    // var_dump($database);
-
-    //make sure its a Form post request
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         //will triger the whole sign up process
         $email = $_POST['email'];
         $password = $_POST['password'];
-        $confirm_password = $_POST['confirm_password'];
 
-        //make sure user's email wan't already existed in the database
+        // find the user in database using the provided email
         $statement = $database->prepare(
             'SELECT * FROM users WHERE email= :email'
         );
@@ -24,36 +19,41 @@
         ]);
 
         //fetch the result from the database
-        $user = $statement->fetch();
+        $user = $statement->fetch(); //fetchAll() - come up with a list
+                                     //fecth() - only an item (only 1 )
 
-        //if user exist, return error
+        //if user exists, it means user exists in the database
         if($user) {
-            echo 'email already exists';
-        } else {
-            //if user doesn"t exist, insert user data into database
-            
-            // insert user data in to database
-            $statement = $database->prepare(
-                'INSERT INTO users (email, password) VAlUES (:email, :password)'
-            );
+            // check password
+            if(
+                password_verify($password, $user
+                ['password'])
+                ) {
+                    //assign user data to user session
+                    $_SESSION['user'] = [
+                      'id' => $user['id'],
+                      'email' => $user['email']  
+                    ];
 
-            $statement->execute([
-            'email' => $email,
-            'password' => password_hash($password, PASSWORD_DEFAULT) 
-            ]);
+                    // redirect user back to index
+                    header('Location: /');
+                    exit;
 
-            //redirect theuser back to login.php
-            header('Location: /login.php');
-            exit;
+            } else {
+                echo 'invalid email or password';
             }
-
+        } else {
+            // user doesn"t exist
+            echo 'invalid email or password';
+        }
     }
+
 
 ?>
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Simple Auth - Sign Up</title>
+    <title>User Authentication System - Login</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -74,9 +74,9 @@
     <div class="card rounded shadow-sm mx-auto my-4" style="max-width: 500px;">
       <div class="card-body">
         <h5 class="card-title text-center mb-3 py-3 border-bottom">
-          Sign Up a New Account
+          Login To Your Account
         </h5>
-        <!-- sign up form-->
+        <!-- login form-->
         <form action="<?php echo $_SERVER['REQUEST_URI']; ?>" method="POST">
           <div class="mb-3">
             <label for="email" class="form-label">Email address</label>
@@ -91,26 +91,12 @@
               name="password"
             />
           </div>
-          <div class="mb-3">
-            <label for="confirm_password" class="form-label"
-              >Confirm Password</label
-            >
-            <input
-              type="password"
-              class="form-control"
-              id="confirm_password"
-              name="confirm_password"
-            />
-          </div>
           <div class="d-grid">
-            <button type="submit" class="btn btn-primary btn-fu">
-              Sign Up
-            </button>
+            <button type="submit" class="btn btn-primary btn-fu">Login</button>
           </div>
         </form>
       </div>
     </div>
-
     <!-- Go back link -->
     <div class="text-center">
       <a href="index.html" class="text-decoration-none"
